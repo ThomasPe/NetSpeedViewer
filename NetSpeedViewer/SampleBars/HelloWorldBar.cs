@@ -8,8 +8,8 @@ using System.Net.NetworkInformation;
 
 namespace SampleBars
 {
-    [Guid("AE07101B-46D4-4a98-AF68-0333EA26E113")]
-    [BandObject("Hello World Bar", BandObjectStyle.Horizontal | BandObjectStyle.ExplorerToolbar | BandObjectStyle.TaskbarToolBar, HelpText = "Shows bar that says hello.")]
+    [Guid("D738ECB9-36D4-4E33-B516-909F26995B9E")]
+    [BandObject("NetSpeedViewer Bar", BandObjectStyle.Horizontal | BandObjectStyle.ExplorerToolbar | BandObjectStyle.TaskbarToolBar, HelpText = "Shows your current network traffic.")]
     public class HelloWorldBar : BandObject
     {
         private System.ComponentModel.Container components = null;

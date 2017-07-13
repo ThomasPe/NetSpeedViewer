@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Wix xmlns="http://schemas.microsoft.com/wix/2006/wi">
+	<Product Id="*" Name="NetSpeedViewer Band" Language="1033" Version="1.0.0.0" Manufacturer="Thomas Pentenrieder" UpgradeCode="9785cffb-b135-4379-90c8-3dfdfdb3977e">
+		<Package InstallerVersion="200" Compressed="yes" InstallScope="perMachine" />
+
+		<MajorUpgrade DowngradeErrorMessage="A newer version of [ProductName] is already installed." />
+		<MediaTemplate />
+    <Directory Id='TARGETDIR' Name='SourceDir'>
+      <Directory Id='ProgramFilesFolder' Name='PFiles'>
+        <Directory Id='INSTALLDIR' Name='HelloWorldShellExtension'>
+                  <!--<Component Id="SampleBars" Guid="d738ecb9-36d4-4e33-b516-909f26995b9e" DiskId="1">
+              <File Id="SampleBarsID" Name="SampleBars" Assembly=".net" KeyPath="yes" Source="..\SampleBars\bin\Release\SampleBars.dll" />
+            </Component>-->
+            <Component Id="BandObjectLib.dll" Guid="8d1b02d4-c856-4919-b008-cfd9eabebfd3" DiskId="1">
+              <File Id="BandObjectLibID" Name="BandObjectLib" Assembly=".net" KeyPath="yes" Source="..\BandObjectLib\bin\Release\BandObjectLib.dll" />
+            </Component>
+            <Component Id="SampleBars.dll" Guid="{CA4782FB-CC20-4C42-9B6F-A0D0F9CFE533}">
+              <Class Id="{D738ECB9-36D4-4E33-B516-909F26995B9E}" Context="InprocServer32" Description="NetSpeedViewer Bar" ThreadingModel="both" ForeignServer="mscoree.dll">
+                <ProgId Id="SampleBars.HelloWorldBar" Description="SampleBars.HelloWorldBar" />
+              </Class>
+              <File Id="SampleBars.dll" KeyPath="yes" Assembly=".net" Source="..\SampleBars\bin\Release\SampleBars.dll" />
+              <RegistryValue Root="HKCR" Key="CLSID\{D738ECB9-36D4-4E33-B516-909F26995B9E}\Implemented Categories\{00021492-0000-0000-C000-000000000046}" Value="" Type="string" Action="write" />
+              <RegistryValue Root="HKCR" Key="CLSID\{D738ECB9-36D4-4E33-B516-909F26995B9E}\Implemented Categories\{00021494-0000-0000-C000-000000000046}" Value="" Type="string" Action="write" />
+              <RegistryValue Root="HKCR" Key="CLSID\{D738ECB9-36D4-4E33-B516-909F26995B9E}\Implemented Categories\{62C8FE65-4EBB-45e7-B440-6E39B2CDBF29}" Value="" Type="string" Action="write" />
+              <RegistryValue Root="HKCR" Key="CLSID\{D738ECB9-36D4-4E33-B516-909F26995B9E}\InprocServer32\1.0.0.1" Name="Class" Value="SampleBars.HelloWorldBar" Type="string" Action="write" />
+              <RegistryValue Root="HKCR" Key="CLSID\{D738ECB9-36D4-4E33-B516-909F26995B9E}\InprocServer32\1.0.0.1" Name="Assembly" Value="SampleBars, Version=1.0.0.1, Culture=neutral, PublicKeyToken=4b827ebe229d539f" Type="string" Action="write" />
+              <RegistryValue Root="HKCR" Key="CLSID\{D738ECB9-36D4-4E33-B516-909F26995B9E}\InprocServer32\1.0.0.1" Name="RuntimeVersion" Value="v4.0.30319" Type="string" Action="write" />
+              <RegistryValue Root="HKCR" Key="CLSID\{D738ECB9-36D4-4E33-B516-909F26995B9E}\InprocServer32\1.0.0.1" Name="CodeBase" Value="file:///[#SampleBars.dll]" Type="string" Action="write" />
+              <RegistryValue Root="HKCR" Key="CLSID\{D738ECB9-36D4-4E33-B516-909F26995B9E}\InprocServer32" Name="Class" Value="SampleBars.HelloWorldBar" Type="string" Action="write" />
+              <RegistryValue Root="HKCR" Key="CLSID\{D738ECB9-36D4-4E33-B516-909F26995B9E}\InprocServer32" Name="Assembly" Value="SampleBars, Version=1.0.0.1, Culture=neutral, PublicKeyToken=4b827ebe229d539f" Type="string" Action="write" />
+              <RegistryValue Root="HKCR" Key="CLSID\{D738ECB9-36D4-4E33-B516-909F26995B9E}\InprocServer32" Name="RuntimeVersion" Value="v4.0.30319" Type="string" Action="write" />
+              <RegistryValue Root="HKCR" Key="CLSID\{D738ECB9-36D4-4E33-B516-909F26995B9E}\InprocServer32" Name="CodeBase" Value="file:///[#SampleBars.dll]" Type="string" Action="write" />
+              <RegistryValue Root="HKCR" Key="CLSID\{D738ECB9-36D4-4E33-B516-909F26995B9E}" Name="MenuText" Value="NetSpeedViewer Bar" Type="string" Action="write" />
+              <RegistryValue Root="HKCR" Key="CLSID\{D738ECB9-36D4-4E33-B516-909F26995B9E}" Name="HelpText" Value="Shows your current network traffic." Type="string" Action="write" />
+            </Component>
+        </Directory>
+      </Directory>
+    </Directory>
+		<Feature Id="ProductFeature" Title="SetupWiX3" Level="1">
+			<ComponentRef Id="BandObjectLib.dll"></ComponentRef>
+      <ComponentRef Id="SampleBars.dll"></ComponentRef>
+		</Feature>
+	</Product>
+
+</Wix>

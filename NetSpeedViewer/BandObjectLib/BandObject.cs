@@ -22,7 +22,7 @@ namespace BandObjectLib
 	/// </summary>
 	/// <example>
 	/// [Guid("YOURGUID-GOES-HERE-YOUR-GUIDGOESHERE")]
-	/// [BandObject("Hello World Bar", BandObjectStyle.Horizontal | BandObjectStyle.ExplorerToolbar , HelpText = "Shows bar that says hello.")]
+	/// [BandObject("Hello Netview Bar", BandObjectStyle.Horizontal | BandObjectStyle.ExplorerToolbar , HelpText = "Shows NetView that says hello.")]
 	/// public class HelloWorldBar : BandObject
 	/// { /*...*/ }
 	/// </example>
