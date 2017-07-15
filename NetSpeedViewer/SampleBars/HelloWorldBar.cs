@@ -9,7 +9,7 @@ using System.Net.NetworkInformation;
 namespace SampleBars
 {
     [Guid("D738ECB9-36D4-4E33-B516-909F26995B9E")]
-    [BandObject("NetSpeedViewer Bar", BandObjectStyle.Horizontal | BandObjectStyle.ExplorerToolbar | BandObjectStyle.TaskbarToolBar, HelpText = "Shows your current network traffic.")]
+    [BandObject("NetSpeedViewer", BandObjectStyle.Horizontal | BandObjectStyle.ExplorerToolbar | BandObjectStyle.TaskbarToolBar, HelpText = "Shows your current network traffic.")]
     public class HelloWorldBar : BandObject
     {
         private System.ComponentModel.Container components = null;
@@ -20,15 +20,41 @@ namespace SampleBars
         private Label downloadValLabel;
         private Timer updateTimer;
 
+        double bytesSentSpeedPrev = 0;
+        double bytesReceivedSpeedPrev = 0;
+
+        private NetworkInterface[] nicArr;
+        private const int TIMERUDPATE = 1000;
+        private int networkInterfaceId = 0;
+
         public HelloWorldBar()
         {
             InitializeComponent();
+            InitializeNetworkInterface();
+            InitializeTimer();
+        }
+
+        private void InitializeNetworkInterface()
+        {
+            // Grab all local interfaces to this computer
+            nicArr = NetworkInterface.GetAllNetworkInterfaces();
+
+            // Add each interface name to the combo box
+            //for (int i = 0; i < nicArr.Length; i++)
+                //cmbInterface.Items.Add(nicArr[i].Name);
+
+            // Change the initial selection to the first interface
+            //cmbInterface.SelectedIndex = 0;
+        }
+
+        private void InitializeTimer()
+        {
             updateTimer = new Timer();
             updateTimer.Tick += UpdateTimer_Tick;
-            updateTimer.Interval = 500;
+            updateTimer.Interval = TIMERUDPATE;
             updateTimer.Start();
-            //GetTraffic();
         }
+
 
         private void UpdateTimer_Tick(object sender, EventArgs e)
         {
@@ -39,11 +65,20 @@ namespace SampleBars
                 return;
             }
 
-            NetworkInterface[] interfaces
-                = NetworkInterface.GetAllNetworkInterfaces();
-            var down = interfaces[0].GetIPStatistics().BytesReceived / 1024;
-            downloadValLabel.Text = down.ToString();
+            NetworkInterface nic = nicArr[networkInterfaceId];
+            IPv4InterfaceStatistics interfaceStats = nic.GetIPv4Statistics();
+            double bytesSentSpeed = interfaceStats.BytesSent;
+            double bytesReceivedSpeed = interfaceStats.BytesReceived;
+            double bytesSentSpeedDelta = bytesSentSpeed - bytesSentSpeedPrev;
+            double bytesReceivedSpeedDelta = bytesReceivedSpeed - bytesReceivedSpeedPrev;
+
+            downloadValLabel.Text = $"{string.Format("{0:N2}", (bytesReceivedSpeedDelta / 1024))} kB/s";
             downloadValLabel.Update();
+            uploadValLabel.Text = $"{string.Format("{0:N2}", (bytesSentSpeedDelta / 1024))} kB/s";
+            uploadValLabel.Update();
+
+            bytesReceivedSpeedPrev = bytesReceivedSpeed;
+            bytesSentSpeedPrev = bytesSentSpeed;
         }
 
         private async void GetTraffic()
@@ -84,7 +119,7 @@ namespace SampleBars
         public void AddContextMenuAndItems()
         {
             ContextMenu mnuContextMenu = new ContextMenu();
-            this.ContextMenu = mnuContextMenu;
+            ContextMenu = mnuContextMenu;
 
             if (!NetworkInterface.GetIsNetworkAvailable())
             {
@@ -100,7 +135,7 @@ namespace SampleBars
                 if (!ni.Name.Contains("Loopback"))
                 {
                     MenuItem mnuItemNew = new MenuItem();
-                    mnuItemNew.Text = $"{ni.Name} | {ni.Description} | {ni.Speed}";
+                    mnuItemNew.Text = $"{ni.Description} ({ni.Name})";
                     mnuContextMenu.MenuItems.Add(mnuItemNew);
                 }
             }
@@ -109,91 +144,87 @@ namespace SampleBars
         #region Component Designer generated code
         private void InitializeComponent(string t = "test1")
         {
-            this.tableLayoutPanel2 = new System.Windows.Forms.TableLayoutPanel();
-            this.uploadLabel = new System.Windows.Forms.Label();
-            this.downloadLabel = new System.Windows.Forms.Label();
-            this.uploadValLabel = new System.Windows.Forms.Label();
-            this.downloadValLabel = new System.Windows.Forms.Label();
-            this.tableLayoutPanel2.SuspendLayout();
-            this.SuspendLayout();
+            tableLayoutPanel2 = new TableLayoutPanel();
+            uploadLabel = new Label();
+            downloadLabel = new Label();
+            uploadValLabel = new Label();
+            downloadValLabel = new Label();
+            tableLayoutPanel2.SuspendLayout();
+            SuspendLayout();
             // 
             // tableLayoutPanel2
             // 
-            this.tableLayoutPanel2.ColumnCount = 2;
-            this.tableLayoutPanel2.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 20F));
-            this.tableLayoutPanel2.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 80F));
-            this.tableLayoutPanel2.Controls.Add(this.uploadLabel, 0, 0);
-            this.tableLayoutPanel2.Controls.Add(this.downloadLabel, 0, 1);
-            this.tableLayoutPanel2.Controls.Add(this.uploadValLabel, 1, 0);
-            this.tableLayoutPanel2.Controls.Add(this.downloadValLabel, 1, 1);
-            this.tableLayoutPanel2.Location = new System.Drawing.Point(0, 0);
-            this.tableLayoutPanel2.Name = "tableLayoutPanel2";
-            this.tableLayoutPanel2.RowCount = 2;
-            this.tableLayoutPanel2.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 50F));
-            this.tableLayoutPanel2.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 50F));
-            this.tableLayoutPanel2.Size = new System.Drawing.Size(192, 30);
-            this.tableLayoutPanel2.TabIndex = 0;
+            tableLayoutPanel2.ColumnCount = 2;
+            tableLayoutPanel2.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 22F));
+            tableLayoutPanel2.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 78F));
+            tableLayoutPanel2.Controls.Add(uploadLabel, 0, 0);
+            tableLayoutPanel2.Controls.Add(downloadLabel, 0, 1);
+            tableLayoutPanel2.Controls.Add(uploadValLabel, 1, 0);
+            tableLayoutPanel2.Controls.Add(downloadValLabel, 1, 1);
+            tableLayoutPanel2.Location = new Point(0, 0);
+            tableLayoutPanel2.Name = "tableLayoutPanel2";
+            tableLayoutPanel2.RowCount = 2;
+            tableLayoutPanel2.RowStyles.Add(new RowStyle(SizeType.Percent, 50F));
+            tableLayoutPanel2.RowStyles.Add(new RowStyle(SizeType.Percent, 50F));
+            tableLayoutPanel2.Size = new Size(100, 30);
+            tableLayoutPanel2.TabIndex = 0;
             // 
             // uploadLabel
             // 
-            this.uploadLabel.AutoSize = true;
-            this.uploadLabel.ForeColor = System.Drawing.SystemColors.ControlLightLight;
-            //this.uploadLabel.Location = new System.Drawing.Point(3, 0);
-            this.uploadLabel.Name = "uploadLabel";
-            //this.uploadLabel.Size = new System.Drawing.Size(18, 13);
-            this.uploadLabel.TabIndex = 0;
-            this.uploadLabel.Text = "U:";
+            uploadLabel.AutoSize = true;
+            uploadLabel.ForeColor = SystemColors.ControlLightLight;
+            uploadLabel.Name = "uploadLabel";
+            uploadLabel.TabIndex = 0;
+            uploadLabel.Text = "U:";
             uploadLabel.BackColor = Color.Black;
 
             // 
             // downloadLabel
             // 
-            this.downloadLabel.AutoSize = true;
-            this.downloadLabel.ForeColor = System.Drawing.SystemColors.ControlLightLight;
-            //this.downloadLabel.Location = new System.Drawing.Point(3, 33);
-            this.downloadLabel.Name = "downloadLabel";
-            //this.downloadLabel.Size = new System.Drawing.Size(18, 13);
-            this.downloadLabel.TabIndex = 1;
-            this.downloadLabel.Text = "D:";
+            downloadLabel.AutoSize = true;
+            downloadLabel.ForeColor = SystemColors.ControlLightLight;
+            downloadLabel.Name = "downloadLabel";
+            downloadLabel.TabIndex = 1;
+            downloadLabel.Text = "D:";
             downloadLabel.BackColor = Color.Black;
             // 
             // uploadValLabel
             // 
-            this.uploadValLabel.AutoSize = true;
-            this.uploadValLabel.ForeColor = System.Drawing.SystemColors.ControlLightLight;
-            //this.uploadValLabel.Location = new System.Drawing.Point(49, 0);
-            this.uploadValLabel.Name = "uploadValLabel";
-            //this.uploadValLabel.Size = new System.Drawing.Size(68, 13);
-            this.uploadValLabel.TabIndex = 2;
-            this.uploadValLabel.Text = "111";
+            uploadValLabel.AutoSize = false;
+            uploadValLabel.Dock = DockStyle.Right;
+            uploadValLabel.ForeColor = SystemColors.ControlLightLight;
+            uploadValLabel.Name = "uploadValLabel";
+            uploadValLabel.TabIndex = 2;
+            uploadValLabel.Text = "-- kB/s";
+            uploadValLabel.TextAlign = ContentAlignment.MiddleRight;
             uploadLabel.BackColor = Color.Black;
             // 
             // downloadValLabel
             // 
-            this.downloadValLabel.AutoSize = true;
-            this.downloadValLabel.ForeColor = System.Drawing.SystemColors.ControlLightLight;
-            //this.downloadValLabel.Location = new System.Drawing.Point(49, 33);
-            this.downloadValLabel.Name = "downloadValLabel";
-            //this.downloadValLabel.Size = new System.Drawing.Size(82, 13);
-            this.downloadValLabel.TabIndex = 3;
-            this.downloadValLabel.Text = "000";
+            downloadValLabel.AutoSize = false;
+            downloadValLabel.Dock = DockStyle.Right;
+            downloadValLabel.ForeColor = SystemColors.ControlLightLight;
+            downloadValLabel.Name = "downloadValLabel";
+            downloadValLabel.TabIndex = 3;
+            downloadValLabel.Text = "-- kB/s";
+            downloadValLabel.TextAlign = ContentAlignment.MiddleRight;
             downloadValLabel.BackColor = Color.Black;
             // 
             // HelloWorldBar
             // 
-            this.Controls.Add(this.tableLayoutPanel2);
-            this.MinSize = new System.Drawing.Size(192, 30);
-            this.Size = new System.Drawing.Size(192, 30);
-            this.Name = "HelloWorldBar";
+            Controls.Add(tableLayoutPanel2);
+            MinSize = new Size(100, 30);
+            Size = new Size(100, 30);
+            Name = "NetSpeedViewerBar";
             tableLayoutPanel2.BackColor = Color.Black;
-            this.BackColor = Color.Transparent;
+            BackColor = Color.Transparent;
 
             AddContextMenuAndItems();
 
 
-            this.tableLayoutPanel2.ResumeLayout(false);
-            this.tableLayoutPanel2.PerformLayout();
-            this.ResumeLayout(false);
+            tableLayoutPanel2.ResumeLayout(false);
+            tableLayoutPanel2.PerformLayout();
+            ResumeLayout(false);
 
         }
         #endregion
