@@ -5,6 +5,7 @@ using System.Runtime.InteropServices;
 using System.Drawing;
 using System.Threading.Tasks;
 using System.Net.NetworkInformation;
+using System.Collections.Generic;
 
 namespace SampleBars
 {
@@ -26,6 +27,17 @@ namespace SampleBars
         private NetworkInterface[] nicArr;
         private const int TIMERUDPATE = 1000;
         private int networkInterfaceId = 0;
+        private MenuItem checkedMenuItem;
+
+        private bool isWatchTrafficEnabled = true;
+        private Dictionary<string, double> formats = new Dictionary<string, double>(){
+            { "kbit", (1000 / 8) },
+            { "kB", 1000 },
+            { "Mbit", ((1000 * 1000) / 8) },
+            { "MB", (1000 * 1000) }
+        };
+        private string formatText = "kB";
+        private double formatVal = 1000;
 
         public HelloWorldBar()
         {
@@ -38,13 +50,6 @@ namespace SampleBars
         {
             // Grab all local interfaces to this computer
             nicArr = NetworkInterface.GetAllNetworkInterfaces();
-
-            // Add each interface name to the combo box
-            //for (int i = 0; i < nicArr.Length; i++)
-                //cmbInterface.Items.Add(nicArr[i].Name);
-
-            // Change the initial selection to the first interface
-            //cmbInterface.SelectedIndex = 0;
         }
 
         private void InitializeTimer()
@@ -55,13 +60,16 @@ namespace SampleBars
             updateTimer.Start();
         }
 
-
         private void UpdateTimer_Tick(object sender, EventArgs e)
         {
+            if (!isWatchTrafficEnabled)
+            {
+                updateTimer.Stop();
+                return;
+            }
             if (!NetworkInterface.GetIsNetworkAvailable())
             {
-                downloadValLabel.Text = "nope";
-                downloadValLabel.Update();
+                MessageBox.Show("There's been a network error.");
                 return;
             }
 
@@ -72,38 +80,18 @@ namespace SampleBars
             double bytesSentSpeedDelta = bytesSentSpeed - bytesSentSpeedPrev;
             double bytesReceivedSpeedDelta = bytesReceivedSpeed - bytesReceivedSpeedPrev;
 
-            downloadValLabel.Text = $"{string.Format("{0:N2}", (bytesReceivedSpeedDelta / 1024))} kB/s";
-            downloadValLabel.Update();
-            uploadValLabel.Text = $"{string.Format("{0:N2}", (bytesSentSpeedDelta / 1024))} kB/s";
-            uploadValLabel.Update();
+
+            // don't update text if it's the first cycle
+            if(bytesReceivedSpeedPrev != 0 && bytesSentSpeedPrev != 0)
+            {
+                downloadValLabel.Text = $"{string.Format("{0:N2}", (bytesReceivedSpeedDelta / formatVal))} {formatText}/s";
+                downloadValLabel.Update();
+                uploadValLabel.Text = $"{string.Format("{0:N2}", (bytesSentSpeedDelta / formatVal))} {formatText}/s";
+                uploadValLabel.Update();
+            }
 
             bytesReceivedSpeedPrev = bytesReceivedSpeed;
             bytesSentSpeedPrev = bytesSentSpeed;
-        }
-
-        private async void GetTraffic()
-        {
-            if (!NetworkInterface.GetIsNetworkAvailable())
-            {
-                downloadValLabel.Text = "nope";
-                downloadValLabel.Update();
-                return;
-            }
-
-            NetworkInterface[] interfaces
-                = NetworkInterface.GetAllNetworkInterfaces();
-
-            foreach (NetworkInterface ni in interfaces)
-            {
-                var sent = ni.GetIPv4Statistics().BytesSent.ToString();
-                var received = ni.GetIPv4Statistics().BytesSent.ToString();
-                uploadValLabel.Text = ni.Name;
-                uploadValLabel.Update();
-                downloadValLabel.Text = ni.Description;
-                downloadValLabel.Update();
-                await Task.Delay(1000);
-            }
-            
         }
 
         protected override void Dispose(bool disposing)
@@ -118,27 +106,90 @@ namespace SampleBars
 
         public void AddContextMenuAndItems()
         {
-            ContextMenu mnuContextMenu = new ContextMenu();
-            ContextMenu = mnuContextMenu;
+            ContextMenu = new ContextMenu();
 
-            if (!NetworkInterface.GetIsNetworkAvailable())
-            {
-                downloadValLabel.Text = "nope";
-                downloadValLabel.Update();
-            }
+            // On / Off
+            var onoffmnuItem = new MenuItem();
+            onoffmnuItem.Click += ToggleWatchTraffic;
+            onoffmnuItem.Text = "Watch traffic";
+            onoffmnuItem.Checked = isWatchTrafficEnabled;
+            ContextMenu.MenuItems.Add(onoffmnuItem);
+
+            ContextMenu.MenuItems.Add("-");
+
+            // Select Network
 
             NetworkInterface[] interfaces
                 = NetworkInterface.GetAllNetworkInterfaces();
 
-            foreach (NetworkInterface ni in interfaces)
+            for(int i = 0; i < interfaces.Length; i++)
             {
+                NetworkInterface ni = interfaces[i];
                 if (!ni.Name.Contains("Loopback"))
                 {
                     MenuItem mnuItemNew = new MenuItem();
                     mnuItemNew.Text = $"{ni.Description} ({ni.Name})";
-                    mnuContextMenu.MenuItems.Add(mnuItemNew);
+                    mnuItemNew.Tag = i;
+                    mnuItemNew.RadioCheck = true;
+                    mnuItemNew.Click += SelectNetwork;
+                    if(i == 0)
+                    {
+                        checkedMenuItem = mnuItemNew;
+                        mnuItemNew.Checked = true;
+                    }
+                    ContextMenu.MenuItems.Add(mnuItemNew);
                 }
             }
+
+            ContextMenu.MenuItems.Add("-");
+
+            // Traffic Format
+            foreach(var format in formats)
+            {
+                var fmi = new MenuItem();
+                fmi.Text = format.Key;
+                fmi.Tag = format.Value;
+                fmi.RadioCheck = true;
+                fmi.Click += ChangeFormat_Click;
+                ContextMenu.MenuItems.Add(fmi);
+            }
+
+        }
+
+        private void ChangeFormat_Click(object sender, EventArgs e)
+        {
+            var item = (MenuItem)sender;
+            formatText = item.Text;
+            formatVal = (double)item.Tag;
+        }
+
+        private void ToggleWatchTraffic(object sender, EventArgs e)
+        {
+            isWatchTrafficEnabled = !isWatchTrafficEnabled;
+            ((MenuItem)sender).Checked = isWatchTrafficEnabled;
+            if (isWatchTrafficEnabled)
+            {
+                updateTimer.Start();
+            } else
+            {
+                updateTimer.Stop();
+                bytesReceivedSpeedPrev = 0;
+                bytesSentSpeedPrev = 0;
+                downloadValLabel.Text = $"--- {formatText}/s";
+                downloadValLabel.Update();
+                uploadValLabel.Text = $"--- {formatText}/s";
+                uploadValLabel.Update();
+            }
+        }
+
+        private void SelectNetwork(object sender, EventArgs e)
+        {
+            checkedMenuItem.Checked = false;
+            checkedMenuItem = (MenuItem)sender;
+            checkedMenuItem.Checked = true;
+            networkInterfaceId = (int)checkedMenuItem.Tag;
+            bytesReceivedSpeedPrev = 0;
+            bytesSentSpeedPrev = 0;
         }
 
         #region Component Designer generated code
@@ -155,8 +206,8 @@ namespace SampleBars
             // tableLayoutPanel2
             // 
             tableLayoutPanel2.ColumnCount = 2;
-            tableLayoutPanel2.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 22F));
-            tableLayoutPanel2.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 78F));
+            tableLayoutPanel2.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 20F));
+            tableLayoutPanel2.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 80F));
             tableLayoutPanel2.Controls.Add(uploadLabel, 0, 0);
             tableLayoutPanel2.Controls.Add(downloadLabel, 0, 1);
             tableLayoutPanel2.Controls.Add(uploadValLabel, 1, 0);
@@ -166,7 +217,7 @@ namespace SampleBars
             tableLayoutPanel2.RowCount = 2;
             tableLayoutPanel2.RowStyles.Add(new RowStyle(SizeType.Percent, 50F));
             tableLayoutPanel2.RowStyles.Add(new RowStyle(SizeType.Percent, 50F));
-            tableLayoutPanel2.Size = new Size(100, 30);
+            tableLayoutPanel2.Size = new Size(120, 30);
             tableLayoutPanel2.TabIndex = 0;
             // 
             // uploadLabel
@@ -195,7 +246,7 @@ namespace SampleBars
             uploadValLabel.ForeColor = SystemColors.ControlLightLight;
             uploadValLabel.Name = "uploadValLabel";
             uploadValLabel.TabIndex = 2;
-            uploadValLabel.Text = "-- kB/s";
+            uploadValLabel.Text = $"--- {formatText}/s";
             uploadValLabel.TextAlign = ContentAlignment.MiddleRight;
             uploadLabel.BackColor = Color.Black;
             // 
@@ -206,15 +257,15 @@ namespace SampleBars
             downloadValLabel.ForeColor = SystemColors.ControlLightLight;
             downloadValLabel.Name = "downloadValLabel";
             downloadValLabel.TabIndex = 3;
-            downloadValLabel.Text = "-- kB/s";
+            downloadValLabel.Text = $"--- {formatText}/s";
             downloadValLabel.TextAlign = ContentAlignment.MiddleRight;
             downloadValLabel.BackColor = Color.Black;
             // 
             // HelloWorldBar
             // 
             Controls.Add(tableLayoutPanel2);
-            MinSize = new Size(100, 30);
-            Size = new Size(100, 30);
+            MinSize = new Size(120, 30);
+            Size = new Size(120, 30);
             Name = "NetSpeedViewerBar";
             tableLayoutPanel2.BackColor = Color.Black;
             BackColor = Color.Transparent;
