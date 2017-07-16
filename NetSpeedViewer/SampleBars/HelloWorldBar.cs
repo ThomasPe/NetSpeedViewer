@@ -3,7 +3,6 @@ using System.Windows.Forms;
 using BandObjectLib;
 using System.Runtime.InteropServices;
 using System.Drawing;
-using System.Threading.Tasks;
 using System.Net.NetworkInformation;
 using System.Collections.Generic;
 
