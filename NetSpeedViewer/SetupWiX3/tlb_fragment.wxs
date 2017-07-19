@@ -1,0 +1,19 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Wix xmlns="http://schemas.microsoft.com/wix/2006/wi">
+    <Fragment>
+        <DirectoryRef Id="TARGETDIR">
+            <Directory Id="dir99DE416F55C8960850D5A4FCA3758AD4" Name="Release" />
+        </DirectoryRef>
+    </Fragment>
+    <Fragment>
+        <DirectoryRef Id="dir99DE416F55C8960850D5A4FCA3758AD4">
+            <Component Id="cmpF9C75BAFA18F5BF7AB38F9065147EFCE" Guid="PUT-GUID-HERE">
+                <File Id="filD19CA0EC9A2182D09FB8ADDA176E799F" KeyPath="yes" Source="SourceDir\Release\SampleBars.tlb">
+                    <TypeLib Id="{223F841A-C9B3-32EA-8975-532FC7DD958A}" Description="SampleBars" HelpDirectory="dir99DE416F55C8960850D5A4FCA3758AD4" Language="0" MajorVersion="1" MinorVersion="0">
+                        <Interface Id="{C30E6CBC-348F-3D1F-92FA-AF6C5C0C7C70}" Name="_HelloWorldBar" ProxyStubClassId32="{00020424-0000-0000-C000-000000000046}" />
+                    </TypeLib>
+                </File>
+            </Component>
+        </DirectoryRef>
+    </Fragment>
+</Wix>
