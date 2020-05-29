@@ -2,6 +2,9 @@
 using System.Collections.Generic;
 using System.Windows.Forms;
 using System.Net.NetworkInformation;
+using System.Linq;
+using System.Configuration;
+using System.Diagnostics;
 
 namespace NetSpeedViewer
 {
@@ -14,23 +17,23 @@ namespace NetSpeedViewer
 
         private NetworkInterface[] nicArr;
         private const int TIMERUDPATE = 1000;
-        private int networkInterfaceId = 0;
+        private int selectedNetworkInterface = 0;
         private MenuItem checkedMenuItem;
 
         private bool isWatchTrafficEnabled = true;
-        private Dictionary<string, double> formats = new Dictionary<string, double>(){
-            { "kbit", (1000 / 8) },
+        private readonly Dictionary<string, double> formats = new Dictionary<string, double>(){
+            { "kbit", 1000 / 8 },
             { "kB", 1000 },
-            { "Mbit", ((1000 * 1000) / 8) },
-            { "MB", (1000 * 1000) }
+            { "Mbit", 1000 * 1000 / 8 },
+            { "MB", 1000 * 1000 }
         };
         private string formatText = "kB";
         private double formatVal = 1000;
 
         public DeskBandUI()
         {
-            InitializeComponent();
             InitializeNetworkInterface();
+            InitializeComponent();
             InitializeTimer();
         }
 
@@ -62,11 +65,12 @@ namespace NetSpeedViewer
                     mnuItemNew.Tag = i;
                     mnuItemNew.RadioCheck = true;
                     mnuItemNew.Click += SelectNetwork;
-                    if (i == 0)
+                    if (i == selectedNetworkInterface)
                     {
                         checkedMenuItem = mnuItemNew;
                         mnuItemNew.Checked = true;
                     }
+
                     ContextMenu.MenuItems.Add(mnuItemNew);
                 }
             }
@@ -76,10 +80,12 @@ namespace NetSpeedViewer
             // Traffic Format
             foreach (var format in formats)
             {
-                var fmi = new MenuItem();
-                fmi.Text = format.Key;
-                fmi.Tag = format.Value;
-                fmi.RadioCheck = true;
+                var fmi = new MenuItem
+                {
+                    Text = format.Key,
+                    Tag = format.Value,
+                    RadioCheck = true
+                };
                 fmi.Click += ChangeFormat_Click;
                 ContextMenu.MenuItems.Add(fmi);
             }
@@ -91,9 +97,20 @@ namespace NetSpeedViewer
             checkedMenuItem.Checked = false;
             checkedMenuItem = (MenuItem)sender;
             checkedMenuItem.Checked = true;
-            networkInterfaceId = (int)checkedMenuItem.Tag;
-            bytesReceivedSpeedPrev = 0;
-            bytesSentSpeedPrev = 0;
+            selectedNetworkInterface = (int)checkedMenuItem.Tag;
+
+            ToggleWatchTraffic(null, null);
+            ToggleWatchTraffic(null, null);
+
+            Settings.Default.Interface = (int)checkedMenuItem.Tag;
+            Settings.Default.Save();
+            Settings.Default.Reload();
+            //Configuration config = ConfigurationManager.OpenExeConfiguration(ConfigurationUserLevel.PerUserRoamingAndLocal);
+            //MessageBox.Show($"Local user config path: {config.FilePath}");
+            //Process.Start(config.FilePath.Replace("user.config", ""));
+
+
+
         }
 
         private void ChangeFormat_Click(object sender, EventArgs e)
@@ -106,7 +123,10 @@ namespace NetSpeedViewer
         private void ToggleWatchTraffic(object sender, EventArgs e)
         {
             isWatchTrafficEnabled = !isWatchTrafficEnabled;
-            ((MenuItem)sender).Checked = isWatchTrafficEnabled;
+            if(sender != null)
+            {
+                ((MenuItem)sender).Checked = isWatchTrafficEnabled;
+            }
             if (isWatchTrafficEnabled)
             {
                 updateTimer.Start();
@@ -127,6 +147,7 @@ namespace NetSpeedViewer
         {
             // Grab all local interfaces to this computer
             nicArr = NetworkInterface.GetAllNetworkInterfaces();
+            selectedNetworkInterface = Settings.Default.Interface;
         }
 
         private void InitializeTimer()
@@ -150,7 +171,12 @@ namespace NetSpeedViewer
                 return;
             }
 
-            NetworkInterface nic = nicArr[networkInterfaceId];
+            NetworkInterface nic = nicArr[0];
+            if(selectedNetworkInterface < nicArr.Length)
+            {
+                nic = nicArr[selectedNetworkInterface];
+            }
+
             IPv4InterfaceStatistics interfaceStats = nic.GetIPv4Statistics();
             double bytesSentSpeed = interfaceStats.BytesSent;
             double bytesReceivedSpeed = interfaceStats.BytesReceived;
